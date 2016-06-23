@@ -1,0 +1,9 @@
+# Python virtualenv files
+__pycache__/
+bin/
+include/
+lib/
+
+# Temporary files
+*.swp
+*~
