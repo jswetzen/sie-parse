@@ -14,8 +14,9 @@ class SieParser:
         self.siefile = siefile
         self.has_next = None
         self.parse_result = None
-        self.last_line = None
-        self.last_list = None
+        self.current_line = None
+        self.current_object = None
+        self.current_list = None
 
     def parse(self):
         """Läs in filen och tolka den. Returnerar en lista av tolkade objekt"""
@@ -30,33 +31,24 @@ class SieParser:
 
     def _parse_sie(self, handle):
         self.parse_result = []
-        while self.has_next:
-            parsed = self._parse_next(handle)
-            if parsed:
-                self.parse_result.append(parsed)
+        for self.current_line in handle:
+            self._parse_next()
         return self.parse_result
 
-    def _parse_next(self, handle):
-        self.last_line = handle.readline()
-        if not self.last_line:
-            self.has_next = False
-            return None
-        tokens = shlex.split(self.last_line)
-        # print(tokens)
+    def _parse_next(self):
+        tokens = shlex.split(self.current_line)
         if tokens and tokens[0] == '#VER':
-            # print("Läser verifikation")
-            return (tokens, self._parse_next(handle))
+            self.current_object = tokens
         elif tokens and tokens[0] == '{':
-            self.last_list = []
-            while self.last_line.strip() != '}':
-                self.last_list.append(self._parse_next(handle))
-            return self.last_list[:-1]
+            self.current_list = []
         elif tokens and tokens[0] == '}':
-            return None
+            self.parse_result.append((self.current_object, self.current_list))
         elif tokens and tokens[0] == '#TRANS':
-            return tokens
+            self.current_list.append(tokens)
+        elif tokens:
+            self.parse_result.append(tokens)
         else:
-            return None
+            pass
 
 
 if __name__ == "__main__":
