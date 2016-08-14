@@ -29,10 +29,6 @@ class SieParser:
         else:
             self.result = self._parse_sie(sys.stdin)
 
-        print(self.result)
-#        for thing in result:
-#            print(thing)
-
     def write_result(self, filename):
         """Skriv resultatet till en fil, med rätt teckenkodning"""
         if self.result:
@@ -91,3 +87,4 @@ if __name__ == "__main__":
     ARGS = ARGPARSER.parse_args()
     PARSER = SieParser(ARGS.siefile)
     PARSER.parse()
+    print(PARSER.result)
