@@ -18,19 +18,28 @@ class SieParser:
         self.parse_result = None
         self.current_line = None
         self.current_verification = None
+        self.result = None
 
     def parse(self):
         """Läs in filen och tolka den. Returnerar en lista av tolkade objekt"""
         self.has_next = True
         if self.siefile:
             with open(self.siefile, 'r', encoding='cp437') as file_handle:
-                result = self._parse_sie(file_handle)
+                self.result = self._parse_sie(file_handle)
         else:
-            result = self._parse_sie(sys.stdin)
+            self.result = self._parse_sie(sys.stdin)
 
-        print(result)
+        print(self.result)
 #        for thing in result:
 #            print(thing)
+
+    def write_result(self, filename):
+        """Skriv resultatet till en fil, med rätt teckenkodning"""
+        if self.result:
+            with open(filename, 'w', encoding='cp437') as file_handle:
+                file_handle.write(repr(self.result))
+        else:
+            print("write_result: nothing to write")
 
     def _parse_sie(self, handle):
         self.parse_result = SieData()
