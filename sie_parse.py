@@ -7,6 +7,7 @@ import argparse
 import shlex
 
 from accounting_data import SieData, Verification, Transaction, DataField
+from petra_output import PetraOutput
 
 class SieParser:
     """Parser för ekonomifiler i .si-format"""
@@ -87,4 +88,9 @@ if __name__ == "__main__":
     ARGS = ARGPARSER.parse_args()
     PARSER = SieParser(ARGS.siefile)
     PARSER.parse()
-    print(PARSER.result)
+    # print(PARSER.result)
+    P_OUTPUT = PetraOutput(PARSER.result, 'Konto.csv', 'Costcenter.csv',
+                           'Projekt.csv')
+    P_OUTPUT.populate_output_table()
+    # P_OUTPUT.print_output()
+    P_OUTPUT.write_output()
