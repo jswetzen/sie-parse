@@ -89,8 +89,8 @@ if __name__ == "__main__":
     PARSER = SieParser(ARGS.siefile)
     PARSER.parse()
     # print(PARSER.result)
-    P_OUTPUT = PetraOutput(PARSER.result, 'Konto.csv', 'Costcenter.csv',
-                           'Projekt.csv')
+    P_OUTPUT = PetraOutput(PARSER.result, 'TABELLER/Konto.csv',
+            'TABELLER/Costcenter.csv', 'TABELLER/Projekt.csv')
     P_OUTPUT.populate_output_table()
     # P_OUTPUT.print_output()
     P_OUTPUT.write_output()

@@ -1,9 +1,12 @@
 # Python virtualenv files
 __pycache__/
-bin/
-include/
-lib/
+.venv
 
 # Temporary files
 *.swp
 *~
+
+# Sensitive data
+CSV/
+TABELLER/
+SIE/
