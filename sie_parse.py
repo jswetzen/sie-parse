@@ -86,6 +86,7 @@ if __name__ == "__main__":
     ARGPARSER.add_argument('siefile', metavar='siefile',
                            help='The file to read, defaults to stdin')
     ARGS = ARGPARSER.parse_args()
+    FILENAME = '.'.join(ARGS.siefile.split('/')[-1].split('.')[:-1])
     PARSER = SieParser(ARGS.siefile)
     PARSER.parse()
     # print(PARSER.result)
@@ -93,4 +94,4 @@ if __name__ == "__main__":
             'TABELLER/Costcenter.csv', 'TABELLER/Projekt.csv')
     P_OUTPUT.populate_output_table()
     # P_OUTPUT.print_output()
-    P_OUTPUT.write_output()
+    P_OUTPUT.write_output('CSV/' + FILENAME + '.csv')

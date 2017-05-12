@@ -8,5 +8,6 @@ __pycache__/
 
 # Sensitive data
 CSV/
+CSV_EXCEL/
 TABELLER/
 SIE/

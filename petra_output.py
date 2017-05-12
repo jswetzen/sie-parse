@@ -121,6 +121,7 @@ class PetraOutput:
         for ver in verifications:
             if not ver.in_balance():
                 raise Exception('Inte i balans:', ver)
+            """
             # Contains 'Swetzén'
             if ver.serie == 'A' and ver.vernr == '170071':
                 print(ver)
@@ -133,10 +134,12 @@ class PetraOutput:
             # Rounding error?
             if ver.serie == 'C' and ver.vernr == '170067':
                 print(ver)
+            """
             ref = "Visma Ver {}{}".format(ver.serie, ver.vernr)
             text = "{} - {}".format(ref, ver.vertext)
             date = ver.verdatum.format("%d/%m/%Y")
             self.table.append(['J', text, 'GL', 'STD', 'SEK', '1', date, ''])
+            # TODO: THIS IS NOT NEEDED, BUT USED TO MATCH EXCEL
             self.table.append([''] * 8)
 
             narr = ver.vertext # Default
@@ -164,24 +167,28 @@ class PetraOutput:
                     kvantitet = format(trans.kvantitet, '.2f').rstrip('0').rstrip('.')
                     narr = "{} {}".format(trans.transtext, kvantitet)
                 elif trans.transtext:
-                    narr = trans.transtext
+                    # TODO: REMOVE TRAILING SPACE, IT'S JUST TO MATCH EXCEL
+                    narr = trans.transtext + ' '
                 dt = trans.debit
                 ct = trans.credit
                 self.table.append(['T', cc, acct, narr, ref, date, dt, ct])
+            # TODO: THIS IS NOT NEEDED, BUT USED TO MATCH EXCEL
             self.table.append([''] * 8)
 
     def print_output(self):
         """Print csv output to stdout"""
         print("\n".join(','.join(str(r) for r in row) for row in self.table))
 
-    def  write_output(self):
+    def  write_output(self, filename=None, overwrite=False):
         """Write csv to file, abort if it already exists"""
+        writemode = 'w' if overwrite else 'x'
         # filename = 'Verifikationer_till_Petra_' + self.ver_month + '.csv'
         try:
             for encoding in ['utf_8_sig']:
-                filename = 'CSV/PYTHON/VtP_' + self.ver_month + encoding + '.csv'
+                if not filename:
+                    filename = 'CSV/PYTHON/VtP_' + self.ver_month + encoding + '.csv'
                 try:
-                    with open(filename, 'x', newline='', encoding=encoding) as csvfile:
+                    with open(filename, writemode, newline='', encoding=encoding) as csvfile:
                         csvwriter = csv.writer(csvfile, delimiter=';')
                         csvwriter.writerows(self.table)
                     # print("Encoding with ", encoding, "successful!")
