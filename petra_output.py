@@ -153,16 +153,16 @@ class PetraOutput:
                         try:
                             cc = self.cost_center[visma_cc]
                         except KeyError:
-                            raise KeyError("Costcenter " + visma_cc + " saknas i tabellen.")
+                            raise KeyError("Costcenter " + visma_cc + " saknas i Costcenter.csv.")
                 else:
                     try:
                         cc = self.project[visma_proj]
                     except KeyError:
-                        raise KeyError("Projekt " + visma_proj + " saknas i tabellen.")
+                        raise KeyError("Projekt " + visma_proj + " saknas i Projekt.csv.")
                 try:
                     acct = self.account[trans.kontonr]
                 except KeyError:
-                    sys.exit("Konto " + trans.kontonr + " saknas i tabellen.")
+                    raise KeyError("Konto " + trans.kontonr + " saknas i Konto.csv.")
                 if trans.transtext and trans.kvantitet:
                     kvantitet = format(trans.kvantitet, '.2f').rstrip('0').rstrip('.')
                     narr = "{} {}".format(trans.transtext, kvantitet)

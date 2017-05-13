@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 from itertools import count
 import difflib
+import PySide
 from PySide.QtCore import *
 from PySide import QtGui
 from PySide.QtGui import *
@@ -60,9 +61,10 @@ class VismaPetraControls(QtGui.QWidget):
 
         self.setLayout(mainbox)
 
-    def showMessage(self, text):
+    def showMessage(self, text, title="Meddelande"):
         msgBox = QMessageBox(self)
         msgBox.setText(text)
+        msgBox.setWindowTitle(title)
         msgBox.show()
 
     def selectTables(self):
@@ -111,10 +113,14 @@ class VismaPetraControls(QtGui.QWidget):
         if self.csvfilename:
             p_output = PetraOutput(self.siedata, self.account_file,
                     self.costcenter_file, self.project_file)
-            p_output.populate_output_table()
-            p_output.write_output(self.csvfilename, True)
-            self.showMessage("CSV sparad till " + self.csvfilename)
-            self.diffButton.setEnabled(True)
+            try:
+                p_output.populate_output_table()
+                p_output.write_output(self.csvfilename, True)
+                self.showMessage("CSV sparad till " + self.csvfilename)
+                self.diffButton.setEnabled(True)
+            except KeyError as kerr:
+                self.showMessage("Kunde inte skapa CSV: {}".format(kerr),
+                    "Skrivning av CSV misslyckades")
 
     def diffCSV(self):
         othercsv, _ = QtGui.QFileDialog.getOpenFileName(self, "Välj csv-fil att jämföra med",
