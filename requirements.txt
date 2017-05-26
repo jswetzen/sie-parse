@@ -1,0 +1,2 @@
+PySide==1.2.4
+pynsist==1.12
