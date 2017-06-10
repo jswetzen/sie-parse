@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
 import sys
+import platform
+import ctypes
 from pathlib import Path
 from itertools import count
 import difflib
@@ -149,6 +151,11 @@ class VismaPetraWindow(QtGui.QMainWindow):
         self.initUI()
     
     def initUI(self):
+        # Make the script run as its own program (not as Python) under Windows
+        if platform.system() == 'Windows':
+            myappid = u'operationmobilisation.petraconverter.1_0'
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+
         controls = VismaPetraControls()
         self.setCentralWidget(controls)
 
