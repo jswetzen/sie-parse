@@ -52,7 +52,7 @@ def test_parse_and_write():
     """Parsing the output of write_result should yield the same output"""
     with NamedTemporaryFile() as file1:
         with NamedTemporaryFile() as file2:
-            parser = SieParser('testfile.si')
+            parser = SieParser('tests/testfile.si')
             parser.parse()
             parser.write_result(file1.name)
             parser2 = SieParser(file1.name)

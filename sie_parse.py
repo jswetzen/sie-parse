@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# vim: set fileencoding=utf-8 :
 """Läs in en verifikationsfil i .si-format för att kunna exportera till något
 annat format"""
 

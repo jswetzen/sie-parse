@@ -5,6 +5,7 @@ import os
 import sys
 import calendar
 import csv
+from csv_dict import CSVDict
 
 def split_csv(table_file='Tabell.csv'):
     """Split account, cost center and project into three tables"""
@@ -55,48 +56,26 @@ def _parse_trans_objects(trans):
             project = obj
     return (cost_center, project)
 
+class CSVKeyMissing(Exception):
+    def __init__(self, message, csv_dict, key):
+        super().__init__(message)
+        self.csv_dict = csv_dict
+        self.key = key
+
 class PetraOutput:
     """Form an output file based on an SieData object and translation table"""
     def __init__(self, sie_data, account_file, cost_center_file, project_file,
                  default_petra_cc='3200'):
         self.sie_data = sie_data
         self.default_petra_cc = default_petra_cc
-        self.parse_tables(account_file, cost_center_file, project_file)
+
+        # self.parse_tables(account_file, cost_center_file, project_file)
+        self.account = CSVDict(account_file)
+        self.cost_center = CSVDict(cost_center_file)
+        self.project = CSVDict(project_file)
+
         self.table = []
         self.ver_month = None
-
-    def parse_tables(self, account_file, cost_center_file, project_file):
-        """Read account, cost center and project translations from csv files"""
-        self.account = {}
-        self.cost_center = {}
-        self.project = {}
-        with open(account_file) as account:
-            account_reader = csv.reader(account, delimiter=';')
-            header = account_reader.__next__()
-            if header[0] == 'V_Kto':
-                for row in account_reader:
-                    self.account[row[0]] = row[1]
-            else:
-                for row in account:
-                    self.account[row[1]] = row[0]
-        with open(cost_center_file) as cost_center:
-            cost_center_reader = csv.reader(cost_center, delimiter=';')
-            header = cost_center_reader.__next__()
-            if header[0] == 'V_Kst':
-                for row in cost_center_reader:
-                    self.cost_center[row[0]] = row[1]
-            else:
-                for row in cost_center_reader:
-                    self.cost_center[row[1]] = row[0]
-        with open(project_file) as project:
-            project_reader = csv.reader(project, delimiter=';')
-            header = project_reader.__next__()
-            if header[0] == 'V_Proj':
-                for row in project_reader:
-                    self.project[row[0]] = row[1]
-            else:
-                for row in project_reader:
-                    self.project[row[1]] = row[0]
 
     def populate_output_table(self):
         # pylint: disable=too-many-locals,too-many-branches,too-many-statements
@@ -111,7 +90,8 @@ class PetraOutput:
         ver_date = next(v.verdatum for v in verifications if v.verdatum.has_date)
         self.ver_month = ver_date.format("%Y-%m")
         description = "Imported from {} {}".format(program, self.ver_month)
-        checksum = round(sum(ver.sum_debit() for ver in verifications), 2)
+        checksum = format(sum(ver.sum_debit() for ver in verifications),
+                '.2f').rstrip('0').rstrip('.').replace('.',',')
         day = calendar.monthrange(ver_date.year, ver_date.month)[1]
         last_date_month = "{}/{:02}/{}".format(day, ver_date.month, ver_date.year)
 
@@ -151,20 +131,24 @@ class PetraOutput:
                         cc = self.default_petra_cc
                     else:
                         try:
-                            cc = self.cost_center[visma_cc]
+                            cc = self.cost_center[str(visma_cc)]['P_Kst']
                         except KeyError:
-                            raise KeyError("Costcenter " + visma_cc + " saknas i Costcenter.csv.")
+                            raise CSVKeyMissing("Costcenter " + str(visma_cc) +
+                            " saknas.", self.cost_center, str(visma_cc))
                 else:
                     try:
-                        cc = self.project[visma_proj]
+                        cc = self.project[str(visma_proj)]['P_Kst_P']
                     except KeyError:
-                        raise KeyError("Projekt " + visma_proj + " saknas i Projekt.csv.")
+                        raise CSVKeyMissing("Projekt " + visma_proj +
+                                " saknas.", self.project, str(visma_proj))
                 try:
-                    acct = self.account[trans.kontonr]
+                    acct = self.account[str(trans.kontonr)]['P_Kto']
                 except KeyError:
-                    raise KeyError("Konto " + trans.kontonr + " saknas i Konto.csv.")
+                    raise CSVKeyMissing("Konto " + trans.kontonr + " saknas.",
+                            self.account, str(trans.kontonr))
                 if trans.transtext and trans.kvantitet:
-                    kvantitet = format(trans.kvantitet, '.2f').rstrip('0').rstrip('.')
+                    kvantitet = format(trans.kvantitet,
+                            '.2f').rstrip('0').rstrip('.').replace('.',',')
                     narr = "{} {}".format(trans.transtext, kvantitet)
                 elif trans.transtext:
                     # TODO: REMOVE TRAILING SPACE, IT'S JUST TO MATCH EXCEL
@@ -182,9 +166,8 @@ class PetraOutput:
     def  write_output(self, filename=None, overwrite=False):
         """Write csv to file, abort if it already exists"""
         writemode = 'w' if overwrite else 'x'
-        # filename = 'Verifikationer_till_Petra_' + self.ver_month + '.csv'
         try:
-            for encoding in ['utf_8_sig']:
+            for encoding in ['utf_8']:
                 if not filename:
                     filename = 'CSV/PYTHON/VtP_' + self.ver_month + encoding + '.csv'
                 try:

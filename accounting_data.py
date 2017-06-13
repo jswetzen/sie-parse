@@ -111,11 +111,16 @@ class Transaction:
         self.sign = sign
 
         if self.belopp < 0:
-            (self.credit, self.debit) = (format(-1*self.belopp, '.2f').rstrip('0').rstrip('.'), '')
+            self.debit = ''
+            self.credit = format(-1*self.belopp,
+                    '.2f').rstrip('0').rstrip('.').replace('.',',')
         else:
-            (self.credit, self.debit) = ('', format(self.belopp, '.2f').rstrip('0').rstrip('.'))
+            self.credit = ''
+            self.debit = format(self.belopp,
+                    '.2f').rstrip('0').rstrip('.').replace('.',',')
 
     def __repr__(self):
+        # TODO: Represent kvantitet with correct decimal places, empty if 0.0
         return '#TRANS "{}" {{{}}} "{}" "{}" "{}" "{}" "{}"'.format(
             self.kontonr, ' '.join(self.objekt), self.belopp, self.transdat,
             self.transtext, self.kvantitet, self.sign)
