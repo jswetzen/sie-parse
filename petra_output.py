@@ -5,7 +5,7 @@ import os
 import sys
 import calendar
 import csv
-from csv_dict import CSVDict
+from csv_dict import CSVDict, CSVKeyMissing
 
 def split_csv(table_file='Tabell.csv'):
     """Split account, cost center and project into three tables"""
@@ -55,12 +55,6 @@ def _parse_trans_objects(trans):
         elif idx == '6' and obj.startswith('P-'):
             project = obj
     return (cost_center, project)
-
-class CSVKeyMissing(Exception):
-    def __init__(self, message, csv_dict, key):
-        super().__init__(message)
-        self.csv_dict = csv_dict
-        self.key = key
 
 class PetraOutput:
     """Form an output file based on an SieData object and translation table"""
@@ -119,8 +113,6 @@ class PetraOutput:
             text = "{} - {}".format(ref, ver.vertext)
             date = ver.verdatum.format("%d/%m/%Y")
             self.table.append(['J', text, 'GL', 'STD', 'SEK', '1', date, ''])
-            # TODO: THIS IS NOT NEEDED, BUT USED TO MATCH EXCEL
-            self.table.append([''] * 8)
 
             narr = ver.vertext # Default
 
@@ -130,34 +122,19 @@ class PetraOutput:
                     if not visma_cc: # Use default
                         cc = self.default_petra_cc
                     else:
-                        try:
-                            cc = self.cost_center[str(visma_cc)]['P_Kst']
-                        except KeyError:
-                            raise CSVKeyMissing("Costcenter " + str(visma_cc) +
-                            " saknas.", self.cost_center, str(visma_cc))
+                        cc = self.cost_center[str(visma_cc)]['P_CC']
                 else:
-                    try:
-                        cc = self.project[str(visma_proj)]['P_Kst_P']
-                    except KeyError:
-                        raise CSVKeyMissing("Projekt " + visma_proj +
-                                " saknas.", self.project, str(visma_proj))
-                try:
-                    acct = self.account[str(trans.kontonr)]['P_Kto']
-                except KeyError:
-                    raise CSVKeyMissing("Konto " + trans.kontonr + " saknas.",
-                            self.account, str(trans.kontonr))
+                    cc = self.project[str(visma_proj)]['P_CC']
+                acct = self.account[str(trans.kontonr)]['P_Acct']
                 if trans.transtext and trans.kvantitet:
                     kvantitet = format(trans.kvantitet,
                             '.2f').rstrip('0').rstrip('.').replace('.',',')
                     narr = "{} {}".format(trans.transtext, kvantitet)
                 elif trans.transtext:
-                    # TODO: REMOVE TRAILING SPACE, IT'S JUST TO MATCH EXCEL
-                    narr = trans.transtext + ' '
+                    narr = trans.transtext
                 dt = trans.debit
                 ct = trans.credit
                 self.table.append(['T', cc, acct, narr, ref, date, dt, ct])
-            # TODO: THIS IS NOT NEEDED, BUT USED TO MATCH EXCEL
-            self.table.append([''] * 8)
 
     def print_output(self):
         """Print csv output to stdout"""

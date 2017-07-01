@@ -4,6 +4,13 @@
 import collections
 import csv
 
+class CSVKeyMissing(Exception):
+    def __init__(self, message, csv_dict, key):
+        super().__init__(message)
+        self.csv_dict = csv_dict
+        self.key = key
+
+
 class CSVDict(collections.MutableMapping):
     """
     Access a csv file using a dictionary interface.
@@ -19,11 +26,14 @@ class CSVDict(collections.MutableMapping):
             self.fields = csv_reader.__next__()
             for row in csv_reader:
                 self.store[row[0]] = {}
-                for i in range(max(len(self.fields), len(row)) - 1):
+                for i in range(min(len(self.fields), len(row)) - 1):
                     self.store[row[0]][self.fields[i + 1]] = row[i + 1]
 
     def __getitem__(self, key):
-        return self.store[key]
+        try:
+            return self.store[key]
+        except KeyError:
+            raise CSVKeyMissing("Key {} missing".format(key), self, key)
 
     def __setitem__(self, key, value):
         if key in self.store:

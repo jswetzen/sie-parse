@@ -3,7 +3,7 @@
 
 import pytest
 from tempfile import NamedTemporaryFile
-from csv_dict import CSVDict
+from csv_dict import CSVDict,CSVKeyMissing
 
 def test_add_items():
     with NamedTemporaryFile(mode='w') as table_file:
@@ -37,6 +37,6 @@ def test_remove_item():
 
         table2 = CSVDict(table_file.name)
 
-        with pytest.raises(KeyError):
+        with pytest.raises(CSVKeyMissing):
             _ = table['1']
             _ = table2['1']

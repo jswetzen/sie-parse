@@ -3,6 +3,28 @@
 
 from datetime import datetime
 from collections import defaultdict
+from itertools import takewhile
+
+def _quote(fields, leave_trailing=True):
+    """
+    Wrap each field in quotes if it contains a space or is empty.
+    leave_trailing: If True, do not quote empty fields at the end of the list.
+    Ex. If True: ['a b', 'c', '', ''] becomes ['"a b"', 'c', '', ''].
+    If false: ['"a b"', 'c', '""', '""']
+    """
+    if leave_trailing:
+        trailing = len(list(takewhile(lambda f: not f, reversed(fields))))
+        return _quote(fields[:len(fields)-trailing], False) + ([''] * trailing)
+    else:
+        return ['"' + str(f) + '"' if ' ' in str(f) or not str(f) else f for f in fields]
+
+def _format_float(num, comma_decimal=False):
+    """Use comma instead of dot. Remove trailing zeroes"""
+    result = format(num, '.2f').rstrip('0').rstrip('.')
+    if comma_decimal:
+        result.replace('.',',')
+    return result
+
 
 class SieData:
     """Lagrar datan som behövs i en SI-fil"""
@@ -37,11 +59,11 @@ class SieData:
 
         return res
 
-    def add_data(self, name, data):
-        """Spara data för posten name. #VER läggs till en lista."""
-        if name in self.single_fields and self.data[name]:
-            raise ValueError("This field is set already: ", name)
-        self.data[name].append(data)
+    def add_data(self, field):
+        """Spara SieField field. #VER läggs till en lista."""
+        if field.name in self.single_fields and self.data[field.name]:
+            raise ValueError("This field is set already: ", field.name)
+        self.data[field.name].append(field)
 
     def get_data(self, name):
         """Läs data från posten name"""
@@ -51,11 +73,40 @@ class SieData:
         """True om all information som specifikationen kräver är sparad"""
         return all([self.data[field] for field in self.needed_fields])
 
-class Verification:
+
+class SieField:
+    """
+    Stores a SIE field, like #FLAGGA, #KONTO or #VER.
+    All fields added to a SieData should be a subclass of SieField.
+    """
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
+    def name(self):
+        """Get the name"""
+        return self.name
+
+    def __repr__(self):
+        formatting = '{} "{}"' if ' ' in self.value else "{} {}"
+        return formatting.format(self.name, self.value)
+
+class DataField(SieField):
+    # pylint: disable=too-few-public-methods
+    """Lagrar en post beskriven av en rad"""
+    def __init__(self, line):
+        self.name = line[0]
+        self.data = line[1:]
+
+    def __repr__(self):
+        return ' '.join([self.name] + _quote(self.data))
+
+class Verification(SieField):
     """Lagrar datan för en verifikation"""
     def __init__(self, serie, vernr, verdatum, vertext='', regdatum='',
                  sign=''):
         # pylint: disable=too-many-arguments
+        self.name = '#VER'
         self.serie = serie
         self.vernr = vernr
         self.verdatum = MaybeDate(verdatum)
@@ -65,9 +116,9 @@ class Verification:
         self.trans_list = []
 
     def __repr__(self):
-        res = '#VER "{}" "{}" "{}" "{}" "{}" "{}"'.format(
-            self.serie, self.vernr, self.verdatum, self.vertext,
-            self.regdatum, self.sign)
+        quoted = _quote([self.serie, self.vernr, self.verdatum, self.vertext,
+            self.regdatum, self.sign])
+        res = '#VER {} {} {} {} {} {}'.format(*quoted)
         res += '\n{\n'
         for trans in self.trans_list:
             res += '   {}\n'.format(trans)
@@ -96,6 +147,7 @@ class Verification:
         return round(sum([trans.belopp for trans in self.trans_list
                           if -1 * trans.belopp > 0]), 2)
 
+
 class Transaction:
     # pylint: disable=too-few-public-methods,too-many-instance-attributes
     """Lagrar datan för en transaktion"""
@@ -111,19 +163,18 @@ class Transaction:
         self.sign = sign
 
         if self.belopp < 0:
-            self.debit = ''
-            self.credit = format(-1*self.belopp,
-                    '.2f').rstrip('0').rstrip('.').replace('.',',')
+            self.debit = '0'
+            self.credit = _format_float(-1*self.belopp, True)
         else:
-            self.credit = ''
-            self.debit = format(self.belopp,
-                    '.2f').rstrip('0').rstrip('.').replace('.',',')
+            self.credit = '0'
+            self.debit = _format_float(self.belopp, True)
 
     def __repr__(self):
-        # TODO: Represent kvantitet with correct decimal places, empty if 0.0
-        return '#TRANS "{}" {{{}}} "{}" "{}" "{}" "{}" "{}"'.format(
-            self.kontonr, ' '.join(self.objekt), self.belopp, self.transdat,
-            self.transtext, self.kvantitet, self.sign)
+        kvantitet = _format_float(self.kvantitet) if self.kvantitet else ''
+        belopp = _format_float(self.belopp)
+        quoted = _quote([self.kontonr]) + [' '.join(self.objekt)] + _quote([
+            belopp, self.transdat, self.transtext, kvantitet, self.sign])
+        return "#TRANS {} {{{}}} {} {} {} {} {}".format(*quoted)
 
     def __eq__(self, other):
         return all(
@@ -131,16 +182,6 @@ class Transaction:
              self.belopp == other.belopp, self.transdat == other.transdat,
              self.transtext == other.transtext,
              self.kvantitet == other.kvantitet, self.sign == other.sign])
-
-class DataField:
-    # pylint: disable=too-few-public-methods
-    """Lagrar en post beskriven av en rad"""
-    def __init__(self, line):
-        self.name = line[0]
-        self.data = line[1:]
-
-    def __repr__(self):
-        return self.name + ' ' + ' '.join(['"' + x + '"' for x in self.data])
 
 class MaybeDate:
     """Parsar och lagrar ett datum om det finns, annars bara en tom sträng"""
@@ -171,3 +212,24 @@ class MaybeDate:
 
     def __eq__(self, other):
         return self.date.__eq__(other.date)
+
+
+class SieIO:
+    """Reads and writes SIE files with correct encoding"""
+    @staticmethod
+    def readSie(filename):
+        with open(filename, 'r', encoding='cp437') as file_handle:
+            return file_handle.readlines()
+
+    @staticmethod
+    def writeSie(sie_data, filename, overwrite=False):
+        """Write SIE to file, abort if it already exists"""
+        writemode = 'w' if overwrite else 'x'
+        if not sie_data.is_complete():
+            raise Exception("SIE-filen är inte komplett.")
+        try:
+            with open(filename, writemode, encoding='cp437', errors='replace') as file_handle:
+                file_handle.write(repr(sie_data))
+        except FileExistsError:
+            raise Exception("Kan inte skriva " + filename + ", filen finns redan.")
+
