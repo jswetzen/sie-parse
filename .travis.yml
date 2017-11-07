@@ -5,7 +5,7 @@ addons:
 language: python
 python:
 - '3.6'
-install: pip install pynsist
+install: pip install -r requirements/build.txt
 script: pynsist installer.cfg
 deploy:
   provider: releases
