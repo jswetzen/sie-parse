@@ -4,7 +4,7 @@
 import collections
 import csv
 
-class CSVKeyMissing(Exception):
+class CSVKeyMissing(KeyError):
     def __init__(self, message, csv_dict, key):
         super().__init__(message)
         self.csv_dict = csv_dict
