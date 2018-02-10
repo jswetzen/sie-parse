@@ -24,35 +24,13 @@ def add_objects_from_sie(sie_data, sie_objects_1, sie_objects_6):
         objects[entry.data[0]][entry.data[1]] = entry.data[2]
 
 
-def complement_Re_CC():
-    with open('TABELLER/Re_CC.csv', 'r') as re_cc, open('TABELLER/Re_CC_2.csv', 'w') as re_cc_2:
-        obj1 = CSVDict('TABELLER/SIE_objects_1.csv')
-        re_cc_reader = csv.reader(re_cc, delimiter=';')
-        re_cc_reader.__next__()
-        re_cc_2.write("V_Kst;Name;P_CC\n")
-        for row in re_cc_reader:
-            try:
-                re_cc_2.write(';'.join([row[0], obj1[row[0]]['Name'], row[1]]))
-                re_cc_2.write("\n")
-            except CSVKeyMissing as csverr:
-                re_cc_2.write(';'.join([row[0], '', row[1]]))
-                re_cc_2.write("\n")
-                print(csverr)
-
-def complement_Proj_CC():
-    with open('TABELLER/Proj_CC.csv', 'r') as proj_cc, open('TABELLER/Proj_CC_2.csv', 'w') as proj_cc_2:
-        obj6 = CSVDict('TABELLER/SIE_objects_6.csv')
-        proj_cc_reader = csv.reader(proj_cc, delimiter=';')
-        proj_cc_reader.__next__()
-        proj_cc_2.write("V_Proj;Name;P_CC\n")
-        for row in proj_cc_reader:
-            try:
-                proj_cc_2.write(';'.join([row[0], obj6[row[0]]['Name'], row[1]]))
-                proj_cc_2.write("\n")
-            except CSVKeyMissing as csverr:
-                proj_cc_2.write(';'.join([row[0], '', row[1]]))
-                proj_cc_2.write("\n")
-                print(csverr)
+def complement_from_SIE(siecsv, tablecsv):
+    obj = CSVDict(siecsv)
+    table = CSVDict(tablecsv)
+    for v, data in table.items():
+        if v in obj:
+            data['Name'] = obj[v]['Name']
+            table[v] = data
 
 if __name__ == "__main__":
     complement_Re_CC()

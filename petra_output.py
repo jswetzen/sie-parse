@@ -39,7 +39,7 @@ def _parse_trans_objects(trans):
     Handle an object list of a transaction.
     The object list contains a cost center and project, formatted like so
     ['1', 'K0000', '6', 'P-00000000'].
-    Cost center is preceeded by a '1' and project by a '6', but the order
+    Cost center (resultatenhet) is preceeded by a '1' and project by a '6', but the order
     of the two could be reversed. Cost center always begins with 'K' and
     project with 'P-'. The object list could also be empty.
 

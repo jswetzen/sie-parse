@@ -9,14 +9,12 @@ from accounting_data import SieData, SieField, Verification, Transaction, DataFi
 from csv_dict import CSVDict
 
 class PetraParser:
-    """Form an output file based on an SieData object and translation table"""
+    """Form an output file based on a Petra CSV file and translation tables"""
     def __init__(self, petra_csv, acct_kto_file, cc_re_proj_file, sie_defaults_file,
-            sie_dims_file, sie_units_file, kto_acct_file, re_cc_file, proj_cc_file,
-            default_petra_cc='3200'):
+            sie_dims_file, sie_units_file, kto_acct_file, re_cc_file, proj_cc_file):
         self.sie_data = SieData()
         self.petra_batches = []
         self.read_petra_csv(petra_csv)
-        self.default_petra_cc = default_petra_cc
         self.acct_kto = CSVDict(acct_kto_file)
         self.cc_re_proj = CSVDict(cc_re_proj_file)
         self.sie_defaults = CSVDict(sie_defaults_file)
@@ -80,11 +78,7 @@ class PetraParser:
                 vertext = journal['data'][1]
                 ver = Verification(serie, vernr, verdatum, vertext, verdatum)
                 for trans in journal['transactions']:
-                    # Non-swedish transactions have account 1998
-                    if trans[1][:2] != '32' and trans[2] != '8500' and trans[2] != '5601':
-                        kontonr = '1998'
-                    else:
-                        kontonr = self.acct_kto[trans[2]]['V_Kto']
+                    kontonr = self.acct_kto[trans[2]]['V_Kto']
                     objekt = ['1', self.cc_re_proj[trans[1]]['V_Re'], '6',
                             self.cc_re_proj[trans[1]]['V_Proj']]
                     belopp = float(trans[6].replace(',', '.')) - float(trans[7].replace(',', '.'))

@@ -28,9 +28,14 @@ class VismaPetraControls(QtGui.QWidget):
         self.petrafile = None
         self.petra_parser = None
         self.tabledir = None
-        self.account_file = None
-        self.costcenter_file = None
-        self.project_file = None
+        self.kto_acct_file = None
+        self.re_cc_file = None
+        self.proj_cc_file = None
+        self.acct_kto_file = None
+        self.cc_re_proj_file = None
+        self.sie_defaults_file = None
+        self.sie_dims_file = None
+        self.sie_units_file = None
         self.initUI()
 
     def initUI(self):
@@ -57,7 +62,7 @@ class VismaPetraControls(QtGui.QWidget):
         # Disable buttons if necessary
         self.diffButton.setEnabled(False)
         self.writeVismaButton.setEnabled(False)
-        if not all((self.account_file, self.costcenter_file, self.project_file)):
+        if not all((self.kto_acct_file, self.re_cc_file, self.proj_cc_file)):
             self.readSieButton.setEnabled(False)
         if not (self.readSieButton.isEnabled() and self.siedata):
             self.writePetraButton.setEnabled(False)
@@ -115,13 +120,19 @@ class VismaPetraControls(QtGui.QWidget):
 
     def readTableDir(self, directory='.'):
         p = Path(directory)
-        tables = list((p / fn for fn in
-                ['Kto_Acct.csv', 'Re_CC.csv', 'Proj_CC.csv']))
+        tables = list((p / fn for fn in ['Kto_Acct.csv', 'Re_CC.csv',
+            'Proj_CC.csv', 'Acct_Kto.csv', 'CC_Re_Proj.csv',
+            'SIE_defaults.csv', 'SIE_dims.csv', 'SIE_units.csv']))
         if all(fp.is_file() for fp in tables):
             self.tabledir = directory
-            self.account_file = str(tables[0])
-            self.costcenter_file = str(tables[1])
-            self.project_file = str(tables[2])
+            self.kto_acct_file = str(tables[0])
+            self.re_cc_file = str(tables[1])
+            self.proj_cc_file = str(tables[2])
+            self.acct_kto_file = str(tables[3])
+            self.cc_re_proj_file = str(tables[4])
+            self.sie_defaults_file = str(tables[5])
+            self.sie_dims_file = str(tables[6])
+            self.sie_units_file = str(tables[7])
             return True
         else:
             return False
@@ -150,8 +161,8 @@ class VismaPetraControls(QtGui.QWidget):
                                 "Spara csv som...", str(csvfile))
         retry = True
         while self.csvfilename and retry:
-            p_output = PetraOutput(self.siedata, self.account_file,
-                    self.costcenter_file, self.project_file)
+            p_output = PetraOutput(self.siedata, self.kto_acct_file,
+                    self.re_cc_file, self.proj_cc_file)
             try:
                 p_output.populate_output_table()
                 p_output.write_output(self.csvfilename, True)
@@ -205,11 +216,10 @@ class VismaPetraControls(QtGui.QWidget):
         self.petrafile, _ = QtGui.QFileDialog.getOpenFileName(self, "Öppna petra-fil",
                 '', 'CSV (*.csv *.txt);;Alla filer (*.*)')
         if self.petrafile:
-            self.petra_parser = PetraParser(self.petrafile, 'TABELLER/Acct_Kto.csv',
-                    'TABELLER/CC_Re_Proj.csv', 'TABELLER/SIE_defaults.csv',
-                    'TABELLER/SIE_dims.csv', 'TABELLER/SIE_units.csv',
-                    'TABELLER/Kto_Acct.csv', 'TABELLER/Re_CC.csv',
-                    'TABELLER/Proj_CC.csv')
+            self.petra_parser = PetraParser(
+                    self.petrafile, self.acct_kto_file, cc_re_proj_file,
+                    sie_defaults_file, sie_dims_file, sie_units_file,
+                    kto_acct_file, re_cc_file, proj_cc_file)
             self.writeVismaButton.setEnabled(True)
 
     def writeSIE(self):
