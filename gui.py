@@ -16,12 +16,49 @@ from petra_output import PetraOutput
 from csv_dict import CSVKeyMissing
 from visma_output import PetraParser
 import signal
+import time
+import io
+import traceback
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
+def excepthook(excType, excValue, tracebackobj):
+    """
+    Global function to catch unhandled exceptions.
+    Shamelessly stolen from Eric IDE.
+
+    @param excType exception type
+    @param excValue exception value
+    @param tracebackobj traceback object
+    """
+    separator = '-' * 80
+    logFile = time.strftime("visma_petra_log_%Y%m%d_%H%M%S.txt")
+    notice = \
+        """Ett fel har inträffat. En loggfil har skrivits till "%s"."""\
+        """\n\nInformation om felet:\n""" % \
+        (logFile)
+    timeString = time.strftime("%Y-%m-%d, %H:%M:%S")
+
+    tbinfofile = io.StringIO()
+    traceback.print_tb(tracebackobj, None, tbinfofile)
+    tbinfofile.seek(0)
+    tbinfo = tbinfofile.read()
+    errmsg = '%s: \n%s' % (str(excType), str(excValue))
+    sections = [separator, timeString, separator, errmsg, separator, tbinfo]
+    msg = '\n'.join(sections)
+    try:
+        f = open(logFile, "w")
+        f.write(msg)
+        f.close()
+    except IOError:
+        pass
+    errorbox = QtGui.QMessageBox()
+    errorbox.setText(str(notice)+str(msg))
+    errorbox.exec_()
 
 class VismaPetraControls(QtGui.QWidget):
     def __init__(self):
+        sys.excepthook = excepthook
         super().__init__()
         self.siedata = None
         self.siefile = None
@@ -217,9 +254,9 @@ class VismaPetraControls(QtGui.QWidget):
                 '', 'CSV (*.csv *.txt);;Alla filer (*.*)')
         if self.petrafile:
             self.petra_parser = PetraParser(
-                    self.petrafile, self.acct_kto_file, cc_re_proj_file,
-                    sie_defaults_file, sie_dims_file, sie_units_file,
-                    kto_acct_file, re_cc_file, proj_cc_file)
+                    self.petrafile, self.acct_kto_file, self.cc_re_proj_file,
+                    self.sie_defaults_file, self.sie_dims_file, self.sie_units_file,
+                    self.kto_acct_file, self.re_cc_file, self.proj_cc_file)
             self.writeVismaButton.setEnabled(True)
 
     def writeSIE(self):
